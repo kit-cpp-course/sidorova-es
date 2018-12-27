@@ -4,7 +4,7 @@
 #include "BigNumbers.h"
 
 BNum::BigInteger :: operator BNum::BigDecimal()const {
-	BigDecimal Dres(0);
+	BigDecimal Dres(0,0);
 	Dres.IntPart = *this;
 	return Dres;
 }
@@ -43,7 +43,17 @@ BNum::BigInteger::BigInteger(int x) {
 
 BNum::BigDecimal::BigDecimal(int intPart, int fractPart) {
 	IntPart= intPart;
+	if (fractPart == 0) {
+		Fract = 0;
+		return;
+	}
+	int n = log10(fractPart) + 1;
 	Fract = fractPart;
+	while (n < BigDecimal::prec){
+		BigInteger ten("10");
+		Fract = (BigInteger)(Fract * ten);
+		n++;
+	}
 }
 
 BNum::BigInteger::BigInteger(string str) {
@@ -159,7 +169,7 @@ bool BNum::BigInteger::operator> (const BigInteger &right) {
 }
 
 BNum::BigDecimal BNum::BigDecimal::operator+ (const BigDecimal & right) const {
-	BigDecimal Dres(0);
+	BigDecimal Dres(0,0);
 	Dres.IntPart =(BigInteger) (this->IntPart + right.IntPart);
 	Dres.Fract = (BigInteger)(this->Fract + right.Fract);
 	BigInteger t("1000000000000000000");
