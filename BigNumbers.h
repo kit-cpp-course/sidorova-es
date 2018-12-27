@@ -1,3 +1,6 @@
+/*
+ * BigNumbers.h
+ */
 #pragma once
 #include <vector>
 #include <string>
@@ -5,22 +8,50 @@ using namespace std;
 
 namespace BNum
 {
-	/*
-	 * Абстрактный класс, описывающий большие числа.
-	 */
-	class BigNumbers {
+	// Предварительное объявление класса BigInteger.
+	class BigInteger;
+
+	// Предварительное объявление класса BigDecimal.
+	class BigDecimal;
+
+	class BigNumber {
 	public:
+		/*
+		 * Оператор явного преобразования любого большого числа к BigDecimal.
+		 */
+		virtual explicit operator BigDecimal () const = 0;
 
 		/*
-		 * Возвращает количество знаков в большом числе.
+		 * Оператор явного преобразования любого большого числа к BigInteger.
 		 */
-		virtual int Count() = 0;
+		virtual explicit operator BigInteger () const = 0;
+
+		/*
+		 * Сложение большого числа с BigInteger.
+		 */
+		virtual BigDecimal operator + (const BigInteger &) const = 0;
+
+		/*
+		 * Сложение большого числа с BigDecimal.
+		 */
+		virtual BigDecimal operator + (const BigDecimal &) const = 0;
+
+		/*
+		 * Вычитание большого числа с BigInteger.
+		 */
+		virtual BigDecimal operator - (const BigInteger &) const = 0;
+
+		/*
+		 * Вычитание большого числа с BigDecimal.
+		 */
+		virtual BigDecimal operator - (const BigDecimal &) const = 0;
+
 	};
 
 	/*
 	 * Класс, описывающий большое целое число.
 	 */
-	class BigInt : public BigNumbers {
+	class BigInteger : public BigNumber {
 		/*
 		 * Основание системы
 		 */
@@ -42,57 +73,62 @@ namespace BNum
 		void RemZeros();
 
 	public:
+		 /*
+		  * Конструктор по умолчанию. Создает нулевое число.
+		  */
+		BigInteger();
+
 		/*
-		 * Конструктор по умолчанию. Создает нулевое число.
+		 * Создание BigInteger из целого числа.
 		 */
-		BigInt();
+		BigInteger(int x);
 
 		/*
 		 * Конструктор, создающий большое число, полученное из строки.
 		 *
 		 * @param str строка, из которой получается большое число
 		 */
-		BigInt(string str);
+		BigInteger(string str);
 
 		/*
-		 * Оператор присваивания.
-		 *
-		 * Присваивает большому числу значения из другого большого числа.
-		 *
-		 * @param bi второй операнд. Большое число, из которого следует взять
-		 * значения для текущего большого числа.
-		 * @returns ссылку на текущий экземпляр класса.
-		 */
-		BigInt& operator = (const BigInt &bi);
-
-		/*
-		 * Возвращает количество знаков в большом числе.
-		 */
-		int Count();
-
-		/*
-		 * Складывает два больших числа.
+		 * Складывает BigInteger и BigDecimal.
 		 *
 		 * @param right правый операнд.
 		 * @returns сумму двух больших чисел.
 		 */
-		BigInt operator +(const BigInt& right) const;
-		
+		BigDecimal operator + (const BigInteger & right) const;
+
 		/*
-		 * Вычитает два больших числа.
+		 * Складывает BigInteger и BigDecimal.
 		 *
 		 * @param right правый операнд.
 		 * @returns сумму двух больших чисел.
 		 */
-		BigInt operator -(const BigInt& right) const;
+		BigDecimal operator + (const BigDecimal & right) const;
 
 		/*
-		 * Умножает два больших числа.
+		 * Вычитает из BigInteger BigInteger.
+		 *
+		 * @param right правый операнд.
+		 * @returns разность двух больших чисел.
+		 */
+		BigDecimal operator - (const BigInteger & right) const;
+
+		/*
+		 * Вычитает из BigInteger BigDecimal.
+		 *
+		 * @param right правый операнд.
+		 * @returns разность двух больших чисел.
+		 */
+		BigDecimal operator - (const BigDecimal & right) const;
+
+		/*
+		 * Умножает BigInteger и BigInteger.
 		 *
 		 * @param right правый операнд.
 		 * @returns произведение двух больших чисел.
 		 */
-		BigInt operator *(const BigInt& right) const;
+		BigDecimal operator * (const BigInteger & right) const;
 
 		/*
 		 * Проверяет, больше ли левое число.
@@ -100,96 +136,134 @@ namespace BNum
 		 * @param right правый операнд.
 		 * @returns frue или false.
 		 */
-		bool operator > (const BigInt& right);
+		bool operator > (const BigInteger & right);
 
 		/*
-	   	 * Проверяет, числа на равенство.
+		 * Проверяет, числа на равенство.
 		 *
 		 * @param right правый операнд.
 		 * @returns frue или false.
 		 */
-		bool operator == (const BigInt& right);
+		bool operator == (const BigInteger& right);
 
-		friend ostream& operator <<(std::ostream& os, const BigInt& bi);
+		/*
+		 * Оператор явного преобразования большого числа к BigDecimal.
+		 */
+		explicit operator BigDecimal () const;
+
+		/*
+		 * Оператор явного преобразования большого числа к BigInteger.
+		 */
+		explicit operator BigInteger () const;
+
+		/*
+		 * Возвращает количество знаков в большом числе.
+		 */
+		int Count();
+
+		friend ostream& operator <<(std::ostream& os, const BigInteger& bi);
+
 	};
 
-
 	/*
-	 * Выводит большое число на экран.
+	 * Выводит BigInteger на экран.
 	 *
 	 * @param os выходной поток.
 	 * @param bi число, которое следует вывести на экран.
 	 * @returns выходной поток.
 	 */
-	ostream& operator <<(std::ostream& os, const BigInt& bi);
+	ostream& operator <<(std::ostream& os, const BigInteger& bd);
 
 
 	/*
 	 * Класс, описывающий большое число с дробной частью.
 	 */
-	class BigDecimal : public BigNumbers{
+	class BigDecimal : public BigNumber {
+		/*
+		 * Большое число, в котором будет храниться целая часть числа.
+		 */
+		BigInteger IntPart;
 
 		/*
-		 * Переменная, в которой будет храниться целая часть числа.
+		 * Большое число, в котором будет храниться дробная часть числа.
 		 */
-		BigInt IntPart;
+		BigInteger Fract; 
 
 		/*
-		 * Переменная, в которой будет храниться дробная часть числа.
-		 * Точность - 9 знаков после запятой.
+		 * Количество знаков, хранимое в дробной части.
 		 */
-		unsigned long fract; 
+		static const int prec = 18;
 
 	public:
-		/*
-		 * Конструктор по умолчанию. Создает нулевое число.
-		 */
-		BigDecimal();
+		 /*
+		  * Конструктор по умолчанию. Создает нулевое число.
+		  */
+		 BigDecimal();
+
+		 /*
+		  * Конструктор, создающий большое число из целой и бробной части.
+		  *
+		  * @param intPart целая часть числа
+		  * @param fractPart дробная часть числа
+		  */
+		 BigDecimal(int intPart, int fractPart=0);
+
+		 /*
+		  * Конструктор, создающий большое число, полученное из строки.
+		  *
+		  * @param str строка, из которой получается большое число
+		  */
+	  	 BigDecimal(string str);
+
+		 /*
+		  * Складывает BigDecimal и BigInteger.
+		  *
+		  * @param right правый операнд.
+		  * @returns сумму двух больших чисел.
+		  */
+		 BigDecimal operator + (const BigInteger & right) const;
+
+		 /*
+		  * Складывает BigDecimal и BigDecimal.
+		  *
+		  * @param right правый операнд.
+		  * @returns сумму двух больших чисел.
+		  */
+		 BigDecimal operator + (const BigDecimal & right) const;
+
+		 /*
+		  * Вычитает из BigDecimal BigInteger.
+		  *
+		  * @param right правый операнд.
+		  * @returns разность двух больших чисел.
+		  */
+		 BigDecimal operator - (const BigInteger & right) const;
+
+		 /*
+		  * Вычитает из BigDecimal BigDecimal.
+		  *
+		  * @param right правый операнд.
+		  * @returns разность двух больших чисел.
+		  */
+		 BigDecimal operator - (const BigDecimal & right) const;
 
 		/*
-		 * Конструктор, создающий большое число, полученное из строки.
-		 *
-		 * @param str строка, из которой получается большое число
+		 * Оператор явного преобразования большого числа к BigDecimal.
 		 */
-		BigDecimal(string str);
+		explicit operator BigDecimal () const;
 
 		/*
-		 * Оператор присваивания.
-		 *
-		 * Присваивает большому числу значения из другого большого числа.
-		 *
-		 * @param bd второй операнд. Большое число, из которого следует взять
-		 * значения для текущего большого числа.
-		 * @returns ссылку на текущий экземпляр класса.
+		 * Оператор явного преобразования большого числа к BigInteger.
 		 */
-		BigDecimal& operator = (const BigDecimal &bd);
-
-		/*
-		 * Возвращает количество знаков в целой части большого числа.
-		 */
-		int Count();
-
-		/*
-		 * Складывает два больших числа.
-		 *
-		 * @param right правый операнд.
-		 * @returns сумму двух больших чисел.
-		 */
-		BigDecimal operator +(const BigDecimal& right) const;
-
-		/*
-		 * Вычитает два больших числа.
-		 *
-		 * @param right правый операнд.
-		 * @returns разность двух больших чисел.
-		 */
-		BigDecimal operator -(const BigDecimal& right) const;
+		explicit operator BigInteger () const;
 
 		friend ostream& operator <<(std::ostream& os, const BigDecimal& bd);
-	};
 
+		friend class BigInteger;
+
+	};
 	/*
-	 * Выводит большое число на экран.
+	 * Выводит BigDecimal на экран.
 	 *
 	 * @param os выходной поток.
 	 * @param bd число, которое следует вывести на экран.
@@ -197,3 +271,4 @@ namespace BNum
 	 */
 	ostream& operator <<(std::ostream& os, const BigDecimal& bd);
 }
+

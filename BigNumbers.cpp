@@ -1,12 +1,52 @@
-#include "stdafx.h"
+/*
+ * BigNumbers.сpp
+ */
 #include "BigNumbers.h"
-#include <cmath>
 
-BNum::BigInt::BigInt() {
+BNum::BigInteger :: operator BNum::BigDecimal()const {
+	BigDecimal Dres(0);
+	Dres.IntPart = *this;
+	return Dres;
+}
+
+BNum::BigDecimal ::operator BNum::BigDecimal()const {
+	return *this;
+}
+
+BNum::BigDecimal ::operator BNum::BigInteger() const {
+	return BigInteger(this->IntPart);
+}
+
+BNum::BigInteger ::operator BNum::BigInteger()const {
+	return *this;
+}
+
+void BNum::BigInteger::RemZeros() {
+	while (this->value.size() > 1 && this->value.back() == 0) {
+		this->value.pop_back();
+	}
+}
+
+BNum::BigInteger::BigInteger() {
 	value.push_back(0);
 }
 
-BNum::BigInt::BigInt( string str){
+BNum::BigDecimal::BigDecimal() {}
+
+BNum::BigInteger::BigInteger(int x) {
+	if (x==0) value.push_back(0);
+	while (x) {
+		value.push_back(x % (BigInteger::base));
+		x = x / (BigInteger::base);
+	}
+}
+
+BNum::BigDecimal::BigDecimal(int intPart, int fractPart) {
+	IntPart= intPart;
+	Fract = fractPart;
+}
+
+BNum::BigInteger::BigInteger(string str) {
 	for (long long i = str.length(); i > 0; i -= num) {
 		if (i < num)
 			this->value.push_back(atoi(str.substr(0, i).c_str()));//atoi преобразует строку в int, с_str возвращает указатель на массив строк
@@ -15,39 +55,162 @@ BNum::BigInt::BigInt( string str){
 	}
 }
 
-void BNum::BigInt::RemZeros() {
-	while (this->value.size() > 1 && this->value.back() == 0) {
-		this->value.pop_back();
+BNum::BigDecimal::BigDecimal(string str) {
+	size_t index = 0;
+	while (index < str.length()) {
+		if (str[index] == '.')
+		{
+			string s = str.substr(0, index);
+			BigInteger f(s);
+			IntPart = f;
+			int CountLeadZeros = 0;
+			while(str.substr(index+1,1)=="0"){
+				str = str.erase(index+1,1);
+				CountLeadZeros++;
+			}
+			Fract = str.substr(index + 1, BigDecimal::prec - CountLeadZeros);
+			int n = Fract.Count();
+			if (n< BigDecimal::prec) {//дополн€ем дробную часть справа нул€ми
+				int k = BigDecimal::prec-CountLeadZeros;
+				BigInteger ten("10");
+				while (n < k) {
+					Fract = (BigInteger)(Fract * ten);
+					n++;
+				}
+			}
+			break;
+		}
+		index++;
 	}
 }
 
-int BNum:: BigInt ::Count() {
-	if (value.at(value.size() - 1) == 0) 
-		return 1;
-	int count = 0;
-	count += log10(value[value.size() - 1]) + 1;
-	count += (value.size() - 1)*num;
-	return count;
+BNum::BigDecimal BNum::BigInteger::operator+ (const BigInteger & right) const {
+	int carry = 0; // флаг переноса из предыдущего разр€да
+	BigInteger res = *this;
+	int max = ((value.size() > right.value.size()) ? value.size() : right.value.size());
+	for (size_t i = 0; i < max || carry != 0; i++) {
+		if (i == res.value.size()) res.value.push_back(0);
+		res.value[i] += carry + (i < right.value.size() ? right.value[i] : 0);
+		carry = res.value[i] >= BigInteger::base;
+		if (carry != 0) res.value[i] -= BigInteger::base;
+	}
+	return (BigDecimal)res;
 }
 
-BNum::BigInt& BNum::BigInt::operator= (const BigInt &bi) {
-	this->value = bi.value;
-	return *this;
+BNum::BigDecimal BNum::BigInteger::operator- (const BigInteger & right) const {
+	if (value.size() < right.value.size()) {
+		BigInteger res(0);
+		return (BigDecimal)res;
+	}
+	else if (value.size() == right.value.size()) {
+		if (value.at(value.size() - 1) < right.value.at(right.value.size() - 1)) {
+			BigInteger res(0);
+			return (BigDecimal)res;
+		}
+	}
+	BigInteger res = *this;
+	int carry = 0;
+	for (size_t i = 0; i < right.value.size() || carry != 0; i++) {
+		res.value[i] -= carry + (i < right.value.size() ? right.value[i] : 0);
+		carry = (res.value[i] < 0);
+		if (carry != 0) res.value[i] += BigInteger::base;
+	}
+	res.RemZeros();
+	return (BigDecimal)res;
 }
 
-bool BNum::BigInt::operator> (const BigInt &right){
+BNum::BigDecimal BNum::BigInteger::operator* (const BigInteger & right) const {
+	BigInteger res(0);
+	res.value.resize(value.size() + right.value.size());
+	for (size_t i = 0; i < value.size(); ++i) {
+		int carry = 0;
+		for (size_t j = 0; j < right.value.size() || carry != 0; j++) {
+			long long cur = res.value[i + j] + value[i] * 1LL * (j < right.value.size() ? right.value[j] : 0) + carry;
+			res.value[i + j] = (cur % BigInteger::base);
+			carry = (int)(cur / BigInteger::base);
+		}
+	}
+	res.RemZeros();
+	return (BigDecimal)res;
+}
+
+BNum::BigDecimal BNum::BigInteger::operator+ (const BigDecimal & right) const {
+	BigDecimal Dres=((BigDecimal)(*this));
+	Dres = Dres + right;
+	return Dres;
+}
+
+BNum::BigDecimal BNum::BigInteger::operator- (const BigDecimal & right) const {
+	BigDecimal Dres = ((BigDecimal)(*this));
+	Dres = Dres - right;
+	return Dres;
+}
+
+bool BNum::BigInteger::operator> (const BigInteger &right) {
 	if (value.size() > right.value.size()) {
 		return true;
-		}
+	}
 	if (value.size() == right.value.size()) {
 		for (int i = 0;i < value.size() - 1;i++) {
-		if (value.at(i)<right.value.at(i) ) return false;
+			if (value.at(i) < right.value.at(i)) return false;
 		}
 	}
 	return false;
 }
 
-bool BNum::BigInt::operator== (const BigInt &right) {
+BNum::BigDecimal BNum::BigDecimal::operator+ (const BigDecimal & right) const {
+	BigDecimal Dres(0);
+	Dres.IntPart =(BigInteger) (this->IntPart + right.IntPart);
+	Dres.Fract = (BigInteger)(this->Fract + right.Fract);
+	BigInteger t("1000000000000000000");
+	if (Dres.Fract>t) {
+		Dres.Fract =(BigInteger)( Dres.Fract - t);
+		BigInteger one(1);
+		Dres.IntPart = (BigInteger)(Dres.IntPart + one);
+	}
+	return Dres;
+}
+
+BNum::BigDecimal BNum::BigDecimal::operator- (const BigDecimal & right) const {
+	BigDecimal Dres;
+	BigInteger Int = this->IntPart;
+	BigInteger R = right.IntPart;
+	BigInteger fInt = this->Fract;
+	BigInteger fR = right.Fract;
+
+	if (R > Int) return Dres;
+	if (R == Int) {
+		if (fR>fInt) return Dres;
+		if (fR == fInt)return Dres;
+		else {
+			Dres.Fract =(BigInteger) (fInt - fR);
+			return Dres;
+		}
+	}
+	else {
+		if (fR > fInt) {
+			BigInteger one(1);
+			Int = (BigInteger)(Int - one);
+			Dres.IntPart = (BigInteger)(Int - R);
+			BigInteger t("1000000000000000000");
+			fInt = (BigInteger)(fInt + t);
+			Dres.Fract = (BigInteger)(fInt - fR);
+		}
+		else {
+			Dres.IntPart = (BigInteger)(Int - R);
+			Dres.Fract = (BigInteger)(fInt - fR);
+		}
+	}
+	return Dres;
+}
+
+BNum::BigDecimal BNum::BigDecimal::operator+ (const BigInteger & right) const {
+	BigDecimal Dres = ((BigDecimal)(right));
+	Dres = Dres + *this;
+	return Dres;
+}
+
+bool BNum::BigInteger::operator== (const BigInteger &right) {
 	if (value.size() != right.value.size()) {
 		return false;
 	}
@@ -63,11 +226,23 @@ bool BNum::BigInt::operator== (const BigInt &right) {
 		}
 	}
 }
- 
-ostream& BNum ::operator<< (std::ostream& os, const BigInt& bi) {
-	if  (bi.value.at(bi.value.size()-1) == 0) {
+
+BNum::BigDecimal BNum::BigDecimal::operator- (const BigInteger & right) const {
+	BigDecimal Dres;
+	BigInteger Int = this->IntPart;
+	BigInteger R=right;
+	if (R > Int) return Dres;
+	else if (R == Int)return Dres;
+	else {
+		Dres.IntPart = (BigInteger)(Dres.IntPart - right);
+	}
+	return Dres;
+}
+
+ostream& BNum ::operator<< (std::ostream& os, const BigInteger& bi) {
+	if (bi.value.at(bi.value.size() - 1) == 0) {
 		os << 0;
-	} 
+	}
 	else {
 		os << bi.value.at(bi.value.size() - 1);
 		if (bi.value.size() >= 2) {
@@ -76,16 +251,16 @@ ostream& BNum ::operator<< (std::ostream& os, const BigInt& bi) {
 			for (i; i >= 0; i--)
 			{
 				if (bi.value.at(i) == 0) {/////////////здесь добавл€ем впереди сто€щие нули в €чейке
-					for (int k = 0;k < BigInt::num;k++) {
+					for (int k = 0;k < BigInteger::num;k++) {
 						os << "0";
 					}
 				}
 				else {
-					int n = log10(bi.value.at(i)) + 1; 
+					int n = log10(bi.value.at(i)) + 1;
 
-					if (n != BigInt::num)
+					if (n != BigInteger::num)
 					{
-						while (BigInt::num - n) {
+						while (BigInteger::num - n) {
 							os << "0";
 							n++;
 						}
@@ -98,179 +273,27 @@ ostream& BNum ::operator<< (std::ostream& os, const BigInt& bi) {
 	return os;
 }
 
-BNum::BigInt  BNum::BigInt::operator+ ( const BigInt& right)const {
-	int carry = 0; // флаг переноса из предыдущего разр€да
-	BigInt res = *this;
-	int max = ((value.size() > right.value.size()) ? value.size() : right.value.size());
-	for (size_t i = 0; i < max || carry != 0; i++) {
-		if (i == res.value.size()) res.value.push_back(0);
-		res.value[i] += carry + (i < right.value.size() ? right.value[i] : 0);
-		carry = res.value[i] >= BigInt::base;
-		if (carry != 0) res.value[i] -= BigInt::base;
-	}
-	return res;
-}
-
-BNum::BigInt BNum::BigInt :: operator- ( const BigInt& right) const {
-	if (value.size() < right.value.size()) {
-		BigInt res("0");
-		return res;
-	}
-	else if (value.size() == right.value.size()) {
-		if (value.at(value.size() - 1) < right.value.at(right.value.size() - 1)) {
-			BigInt res("0");
-			return res;
-		}
-	}
-	BigInt res=*this;
-	int carry = 0;
-	for (size_t i = 0; i < right.value.size() || carry != 0; i++) {
-		res.value[i] -= carry + (i < right.value.size() ? right.value[i] : 0);
-		carry = value[i] < 0;
-		if (carry != 0) res.value[i] += BigInt::base;
-	}
-	res.RemZeros();
-	return res;
-}
-
-BNum::BigInt BNum::BigInt ::operator* ( const BigInt& right) const {
-	BigInt res;
-	res.value.resize(value.size() + right.value.size());
-	for (size_t i = 0; i < value.size(); ++i) {
-		int carry = 0;
-		for (size_t j = 0; j < right.value.size() || carry != 0; j++) {
-			long long cur = res.value[i + j] + value[i] * 1LL * (j < right.value.size() ? right.value[j] : 0) + carry;
-			res.value[i + j] = (cur % BigInt::base);
-			carry = (int)(cur / BigInt::base);
-		}
-	}
-	res.RemZeros();
-	return res;
-}
-
-BNum::BigDecimal::BigDecimal() {
-	fract = 0.;
-}
-
-BNum::BigDecimal::BigDecimal(string str) {
-	size_t index=0;
-	while (index < str.length()) {
-		if (str[index] == '.')  
-		{
-			string s = str.substr(0, index);
-			BigInt f(s);
-			IntPart = f;
-			if(atoi(str.substr(index + 1, 9).c_str()) !=0) {//далее работаем с дробной частью
-				int i = 1;
-				int CountLeadZeros = 0;
-				while (atoi(str.substr(index + 1, i).c_str()) == 0)
-				{
-					CountLeadZeros++;
-					i++;
-				}
-				fract = atoi(str.substr(index + i, 9).c_str()); // может быть больше, чем unsigned long, так что надо ввести ограничегие
-				if (fract <   pow(10, 9- CountLeadZeros)) {//дополн€ем дробную часть справа нул€ми
-					int n = log10(fract) + 1;
-					long long k =  9 - CountLeadZeros;
-						while (n < k) {
-							fract = fract * 10;
-							n++;
-						}
-				}
-			}
-			else {
-				fract = 0;
-			}
-			return;
-		}
-		index++; 
-	}
-}
-
-BNum::BigDecimal& BNum::BigDecimal::operator= (const BigDecimal &bd) {
-	this->IntPart = bd.IntPart;
-	this->fract = bd.fract;
-	return *this;
-}
-
-int BNum::BigDecimal::Count() {
-	int count;
-	count = this->IntPart.Count();
+int BNum::BigInteger::Count() {
+	if (value.at(value.size() - 1) == 0)
+		return 1;
+	int count = 0;
+	count += log10(value[value.size() - 1]) + 1;
+	count += (value.size() - 1)*num;
 	return count;
 }
 
 ostream& BNum ::operator<< (std::ostream& os, const BigDecimal& bd) {
 	os << bd.IntPart;
 	os << ".";
-	if (bd.fract == 0) {
+	int k;
+	BigInteger temp;
+	temp = bd.Fract;
+	k = temp.Count();
+	int Zeros = BigDecimal::prec - k;
+	while (Zeros) {
 		os << "0";
-		return os;
+		Zeros--;
 	}
-	int n = log10(bd.fract) + 1;
-	if ( n < 9) { // 9-количество знаков после зап€той
-		while (9-n) {
-			os << "0";
-			n++;
-		}
-		os << bd.fract;
-		return os;
-	}
-	else {
-		os << bd.fract;
-	}
+	os << bd.Fract;
 	return os;
-}
-
-BNum::BigDecimal  BNum::BigDecimal::operator+ (const BigDecimal& right)const {
-	BigDecimal res;
-	BigInt IntRes = this->IntPart;
-	unsigned long fractRes = this->fract;
-
-	IntRes = IntRes + right.IntPart;
-	fractRes = fractRes + right.fract;
-	if (fractRes >= 1000000000) {
-		BigInt one("1");
-		IntRes = IntRes + one;
-		fractRes = fractRes % 1000000000;
-	}
-	res.IntPart = IntRes;
-	res.fract = fractRes;
-	return res;
-}
-
-BNum::BigDecimal  BNum::BigDecimal::operator- (const BigDecimal& right)const {
-	BigDecimal res;
-	BigInt IntRes = this->IntPart;
-	unsigned long fractRes = this->fract;
-
-	BigInt rightPartInt=right.IntPart;
-	if (rightPartInt > IntRes) {
-		return res;
-	}
-	else if (rightPartInt == IntRes) {
-		if (right.fract > fractRes) return res;
-		else {
-			BigInt zero("0");
-			IntRes=zero;
-			fractRes = fractRes - right.fract;
-			res.IntPart = IntRes;
-			res.fract = fractRes;
-			return res;
-		}
-	}
-	else {
-		IntRes =IntRes-right.IntPart;
-		if (right.fract > fractRes) {
-			BigInt one("1");
-			IntRes = IntRes - one;
-			fractRes = fractRes * 10;
-			fractRes = fractRes - right.fract;
-		}
-		else {
-			fractRes = fractRes - right.fract;
-		}
-		res.IntPart = IntRes;
-		res.fract = fractRes;
-	}
-	return res;
 }
